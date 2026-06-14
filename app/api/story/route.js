@@ -22,11 +22,11 @@ export async function POST(req) {
 
     const data = await response.json();
 
+    // 🔴 关键：打印出来方便你在 Vercel 看日志
+    console.log("Gemini full response:", JSON.stringify(data, null, 2));
+
     const text =
-      data?.candidates?.[0]?.content?.parts
-        ?.map((p) => p.text)
-        ?.join("")
-        ?.trim() || "";
+      data?.candidates?.[0]?.content?.parts?.map(p => p.text).join("") || "";
 
     return Response.json({ story: text });
 
