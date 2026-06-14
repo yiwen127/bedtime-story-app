@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 
 const THEMES = [
   { value: "magic", label: "Magic ✨", emoji: "✨" },
@@ -20,15 +20,15 @@ Age: ${age}
 Theme: ${theme}
 
 Rules:
-- 450 to 600 words
-- Calm, warm, gentle tone
+- 450–600 words
+- Warm, calm, bedtime tone
 - Include child's name multiple times
 - No scary content
-- End with a peaceful sleep ending
+- End with peaceful sleep ending
 
-If theme is:
-- pikachu: include Pikachu as a friendly companion
-- hellokitty: soft pastel world, friendship focus
+Theme guidance:
+- pikachu: friendly Pikachu companion
+- hellokitty: soft pastel friendship world
 - beyblade: magical spinning top adventure
 `;
 }
@@ -39,13 +39,15 @@ export default function Page() {
   const [theme, setTheme] = useState("magic");
   const [story, setStory] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   async function generateStory() {
     if (!name || !age) {
-      alert("Please enter name and age");
+      setError("Please enter name and age");
       return;
     }
 
+    setError("");
     setLoading(true);
     setStory("");
 
@@ -64,9 +66,21 @@ export default function Page() {
 
       console.log("API RESPONSE:", data);
 
-      setStory(data.story || "No story returned");
+      // ✅ ultra-safe parsing (关键修复点)
+      const text =
+        data?.story ||
+        data?.text ||
+        data?.response ||
+        data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+        "";
+
+      if (!text) {
+        setStory("No story returned (check API response)");
+      } else {
+        setStory(text);
+      }
     } catch (e) {
-      setStory("Error generating story: " + e.message);
+      setError("Error: " + e.message);
     }
 
     setLoading(false);
@@ -75,11 +89,11 @@ export default function Page() {
   return (
     <div
       style={{
-        padding: 30,
+        padding: 24,
         fontFamily: "Arial",
-        minHeight: "100vh",
         background: "#07102a",
         color: "white",
+        minHeight: "100vh",
       }}
     >
       <h1>🌙 Bedtime Story Generator</h1>
@@ -113,6 +127,8 @@ export default function Page() {
       <button onClick={generateStory} disabled={loading}>
         {loading ? "Generating..." : "Create Story"}
       </button>
+
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
       <hr style={{ margin: "20px 0" }} />
 
