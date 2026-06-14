@@ -1,15 +1,29 @@
 export async function POST(req) {
+  console.log("API HIT");
+
   try {
-    console.log("API HIT");
+    let bodyText;
+
+    try {
+      bodyText = await req.text();
+      console.log("RAW BODY:", bodyText);
+    } catch (e) {
+      return Response.json(
+        { error: "Cannot read request body" },
+        { status: 400 }
+      );
+    }
 
     let body;
 
     try {
-      body = await req.json();
+      body = JSON.parse(bodyText);
     } catch (e) {
-      console.log("JSON PARSE ERROR:", e);
       return Response.json(
-        { error: "Invalid JSON body" },
+        {
+          error: "Invalid JSON",
+          raw: bodyText,
+        },
         { status: 400 }
       );
     }
@@ -23,9 +37,7 @@ export async function POST(req) {
       );
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-
-    if (!apiKey) {
+    if (!process.env.GEMINI_API_KEY) {
       return Response.json(
         { error: "Missing GEMINI_API_KEY" },
         { status: 500 }
@@ -33,7 +45,7 @@ export async function POST(req) {
     }
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -63,9 +75,7 @@ export async function POST(req) {
     console.log("FATAL ERROR:", e);
 
     return Response.json(
-      {
-        error: e.message,
-      },
+      { error: e.message },
       { status: 500 }
     );
   }
