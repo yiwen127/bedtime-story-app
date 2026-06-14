@@ -1,34 +1,72 @@
 export async function POST(req) {
-  console.log("API HIT");
-
   try {
-    const { prompt } = await req.json();
+    console.log("API HIT");
 
-    if (!process.env.GEMINI_API_KEY) {
-      return Response.json({ error: "Missing API key" }, { status: 500 });
+    let body;
+
+    try {
+      body = await req.json();
+    } catch (e) {
+      console.log("JSON PARSE ERROR:", e);
+      return Response.json(
+        { error: "Invalid JSON body" },
+        { status: 400 }
+      );
+    }
+
+    const prompt = body?.prompt;
+
+    if (!prompt) {
+      return Response.json(
+        { error: "Missing prompt" },
+        { status: 400 }
+      );
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      return Response.json(
+        { error: "Missing GEMINI_API_KEY" },
+        { status: 500 }
+      );
     }
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: prompt }],
+            },
+          ],
         }),
       }
     );
 
     const data = await response.json();
 
-    console.log("Gemini response:", data);
+    console.log("GEMINI RESPONSE:", JSON.stringify(data));
 
     const text =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text || "EMPTY RESPONSE";
+      data?.candidates?.[0]?.content?.parts
+        ?.map((p) => p.text)
+        .join("") || "";
 
     return Response.json({ story: text });
+
   } catch (e) {
-    console.log("ERROR:", e);
-    return Response.json({ error: e.message }, { status: 500 });
+    console.log("FATAL ERROR:", e);
+
+    return Response.json(
+      {
+        error: e.message,
+      },
+      { status: 500 }
+    );
   }
 }
